@@ -1,8 +1,12 @@
 from dataclasses import dataclass
 
+'''
+General Features:
+ - Generate point type from a tuple of values
+'''
 
 '''
-CartesianPoint Features:
+BasicPoint Features:
  - Distance from another
  - Angle from another
  - Vector Normalization (in respect to a point)
@@ -10,7 +14,7 @@ CartesianPoint Features:
  - Constant Computations (add, minus, mul, div)
 '''
 @dataclass
-class CartesianPoint:
+class BasicPoint:
     def __init__(self, x = 0, y = 0):
         self.x: float = x
         self.y: float = y
@@ -23,7 +27,7 @@ ThetaPoint Features:
  - EXT Summing angles
 '''
 @dataclass
-class ThetaPoint(CartesianPoint):
+class ThetaPoint(BasicPoint):
     def __init__(self, x = 0, y = 0, theta = 0.0):
         super().__init__(x = x, y = y)
         self.theta: float = theta

@@ -1,4 +1,5 @@
 import arcade
+from datatypes.points import *
 
 class Gluttony(arcade.Window):
     def __init__(self, w_width, w_height, w_title, fullscreen = False, FPS=60):
