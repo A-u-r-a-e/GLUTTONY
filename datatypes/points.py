@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from math import *
 
 '''
 General Features:
@@ -7,17 +8,78 @@ General Features:
 
 '''
 BasicPoint Features:
- - Distance from another
- - Angle from another
- - Vector Normalization (in respect to a point)
- - Vector Computations (sum, dot)
- - Constant Computations (add, minus, mul, div)
+ - Distance from another [DONE]
+ - Angle from another [DONE]
+ - Vector Normalization (in respect to a point) [DONE]
+ - Vector Computations (sum, dot) [DONE]
+ - Constant Computations (add, minus, mul, div) [DONE]
 '''
 @dataclass
 class BasicPoint:
     def __init__(self, x = 0, y = 0):
         self.x: float = x
         self.y: float = y
+
+    def __repr__(self):
+        return f"BasicPoint({self.x}, {self.y})"
+    
+    def __add__(self, other):
+        return BasicPoint(self.x+other, self.y+other)
+    
+    def __sub__(self, other):
+        return BasicPoint(self.x-other, self.y-other)
+    
+    def __mul__(self, other):
+        return BasicPoint(self.x*other, self.y*other)
+    
+    def __truediv__(self, other):
+        if other == 0:
+            return ValueError
+        return BasicPoint(round(self.x/other, 9), round(self.y/other, 9))
+    
+    def distanceFrom(self, point: BasicPoint):
+        dx = self.x - point.x
+        dy = self.y - point.y
+        return sqrt(dx**2+dy**2)
+
+    def angleFrom(self, point: BasicPoint):
+        dx = point.x - self.x
+        dy = point.y - self.y
+        return atan(dx/dy)
+    
+    def vectorNorm(self, origin: BasicPoint = BasicPoint(0, 0)):
+        scale = self.distanceFrom(origin)
+        return BasicPoint(self.x/scale, self.y/scale)
+    
+    def pointSum(self, *args):
+        newPoint = BasicPoint(self.x, self.y)
+        if isinstance(args, list):
+            newargs = [x for arg in args for x in arg]
+        else:
+            newargs = list(args)
+        for arg in newargs:
+            if not isinstance(arg, BasicPoint):
+                return TypeError
+            newPoint.x += arg.x
+            newPoint.y += arg.y
+        return newPoint
+    
+    def pointDot(self, *args):
+        newPoint = BasicPoint(self.x, self.y)
+        if isinstance(args, list):
+            newargs = [x for arg in args for x in arg]
+        else:
+            newargs = list(args)
+        for arg in newargs:
+            if not isinstance(arg, BasicPoint):
+                return TypeError
+            newPoint.x *= arg.x
+            newPoint.y *= arg.y
+        return newPoint
+    
+
+        
+        
 
 '''
 ThetaPoint Features:
