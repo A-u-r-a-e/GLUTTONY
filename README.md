@@ -28,3 +28,22 @@ i watched too much anime and now i'm going to make a gluttony game IN ARCADE
 - also a lot lamer
 - skill loadouts that can be hotkeyed
 - skill merging becomes a must if we go here
+
+## Building (C++ / SFML)
+
+Needs CMake 3.28+ and a C++20 compiler. SFML 3, nlohmann/json and doctest are downloaded
+automatically on first configure.
+
+```sh
+cmake -S . -B build
+cmake --build build
+./build/gluttony          # input playground (Windows: build\Debug\gluttony.exe)
+./build/gluttony_tests    # unit tests
+```
+
+On Linux, SFML needs the X11/OpenGL/udev dev packages, e.g.
+`sudo apt install libx11-dev libxrandr-dev libxcursor-dev libxi-dev libudev-dev libgl1-mesa-dev`.
+
+Build just the engine and tests (no SFML): `cmake -S . -B build -DGLUTTONY_BUILD_APP=OFF`.
+
+Design notes live in [`docs/`](docs/).

@@ -1,1 +1,8 @@
 .venv
+# C++ build output
+build/
+build-*/
+out/
+.vs/
+.vscode/
+compile_commands.json

@@ -10,21 +10,51 @@ Read this at the start of every session. Update it at the end of every session.
 
 ## Current state
 
-- Design brainstorm done for the high-level vision → see [`design.md`](design.md).
-- Engine is switching from Python Arcade to **C++ / SFML**. No C++ code exists yet.
+- Design vision → [`design.md`](design.md). Input engine → [`input-engine.md`](input-engine.md).
+- **C++20 / SFML 3.1 / CMake project is set up** (deps fetched automatically). Builds clean
+  with no warnings; 36 unit tests pass.
+- **Input engine core exists** (`src/input/`): everything is a Signal; processors derive new
+  signals (bind, axis2d, relative, sectors, flick, threshold); channels watch composable
+  conditions (on, hold, seq, together, any, while/unless); stacked mutes by signal class,
+  channel class, or both (scoped), optionally timed; processors/channels can be switched off.
+  All configurable from `data/input.json`.
+- **Playground app** (`src/app/`) feeds real keyboard/mouse/gamepad input and shows the signal
+  log, channel progress/fires, active signals and mute toggles. F5 reloads the config.
+  Verified working under Xvfb with scripted input (lunge, follow-up, charge, chord, flick,
+  guarded dash, mutes).
+- `data/input.json` content (actions, runes, channels) is **placeholder** to play with.
 - The Python files (`main.py`, `window.py`, `datatypes/`, `content/`) are the old Arcade
-  prototype. Not deleted — user hasn't asked for that.
-- `README.md` still says Arcade (user's original notes, left as-is).
+  prototype — not deleted, user hasn't asked for that. README intro still says Arcade.
 
 ## Next up
 
-- Plan and set up the C++ / SFML project (build system, layout).
-- Build milestone 1: the input/combo engine playground (see `design.md`).
-- Keep everything flexible — see working-style notes in `/CLAUDE.md`.
+Ideas, not commitments — user decides:
+- User plays with the playground and tunes `data/input.json`; see what feels right.
+- The combo **tree** on top of channels (nodes, locked/unlocked, extensions/alternate routes,
+  ability-specific data) — the design's "authored master tree".
+- More processors/conditions as needed (e.g. repeat/count, "released within", axis-to-sector
+  on gamepad sticks, input recording/replay for tuning).
+- Rebinding UI / saving player keybinds separately from the authored channels.
 
 ---
 
 ## Session log
+
+### 2026-09-27 (2) — C++ / SFML setup + input engine
+
+- Set up CMake project: SFML 3.1 (bundled FreeType/HarfBuzz via `SFML_USE_SYSTEM_DEPS OFF`),
+  nlohmann/json 3.12, doctest 2.5.3, all via FetchContent.
+- Built the input engine per the user's ask: "channels to watch certain types of configurable
+  event conditions as well as ways to mute classes of inputs". Kept it flexible: free-form
+  tags instead of fixed categories, everything (raw, derived, channel fires) is one signal
+  stream, so any input can combine with any other. Mouse can give direction by where it is
+  (`dir/mouse`, `dir/aim_vs_move`) and by motion (`flick` → `dir/flick`); keyboard movement
+  gives `dir/move` relative to aim. All at once.
+- Mutes: global by signal class, channel class, or scoped (these signals hidden from those
+  channels); stacked, independently removable, optional expiry.
+- Playground app + debug view; tests; docs (`docs/input-engine.md`), README build section.
+- Notes: `Sectors` with a reference keeps the last reference direction when the reference
+  goes to zero (e.g. `dir/aim_vs_move` stays relative to the last movement direction).
 
 ### 2026-09-27 — Initial brainstorm
 

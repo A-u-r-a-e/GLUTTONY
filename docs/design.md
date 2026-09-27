@@ -57,7 +57,7 @@ You grow by eating what you kill.
 
 ## Tech
 
-- **C++ with SFML** (moving away from Python Arcade; the Python files in the repo are the
+- **C++20 with SFML 3**, built with CMake (moving away from Python Arcade; the Python files in the repo are the
   old prototype).
 - Everything tunable (timings, bindings, directions, the tree, mobs) should be data-driven
   so the design can keep evolving without engine rewrites.
@@ -70,6 +70,8 @@ Build the combo/input system on its own before enemies, world, or art:
 - A live debug view: see the tree, where you are in it, timing, and what's being recognised.
 
 The goal is a playground to *feel out* the casting system, not to lock it down.
+
+**Status:** engine core and playground app are built — see [`input-engine.md`](input-engine.md).
 
 ## Open / undecided (intentionally)
 

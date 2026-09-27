@@ -1,0 +1,121 @@
+// Input config: everything here is placeholder content to play with. Edit freely and press F5
+// in the app to reload. Comments are allowed.
+//
+// Raw signal ids fed by the app:
+//   key/<Name>          keyboard        tags: raw keyboard button
+//   mouse/<Button>      Left Right Middle Extra1 Extra2   tags: raw mouse button
+//   mouse/position      window pixels   tags: raw mouse pointer
+//   mouse/wheel         pulse, value.x = delta        tags: raw mouse wheel
+//   mouse/raw           pulse, raw motion delta       tags: raw mouse motion
+//   pad<N>/button<B>    gamepad buttons tags: raw pad button
+//   pad<N>/axis/<A>     value.x in -1..1              tags: raw pad axis
+//   game/player_position  fed by the game each frame  tags: game context
+//
+// Anything can be combined with anything: channels can watch raw keys, actions, directions,
+// mouse position, flicks, other channels... all at once.
+{
+  // Player keybinds: many inputs can feed one action, one input can feed many actions.
+  "bindings": [
+    { "to": "action/move_up",    "from": ["key/W", "key/Up"],    "tags": ["action", "movement"] },
+    { "to": "action/move_down",  "from": ["key/S", "key/Down"],  "tags": ["action", "movement"] },
+    { "to": "action/move_left",  "from": ["key/A", "key/Left"],  "tags": ["action", "movement"] },
+    { "to": "action/move_right", "from": ["key/D", "key/Right"], "tags": ["action", "movement"] },
+    { "to": "action/dash",       "from": ["key/Space", "key/LShift"], "tags": ["action", "movement"] },
+    { "to": "action/attack",     "from": ["mouse/Left", "key/J"],     "tags": ["action", "attack"] },
+    { "to": "action/heavy",      "from": ["mouse/Right", "key/K"],    "tags": ["action", "attack"] },
+    { "to": "action/guard",      "from": ["key/Q"],                   "tags": ["action", "defense"] },
+    { "to": "rune/fang",         "from": ["key/Num1", "mouse/Extra1"], "tags": ["rune"] },
+    { "to": "rune/venom",        "from": ["key/Num2", "mouse/Extra2"], "tags": ["rune"] },
+    { "to": "rune/flame",        "from": ["key/Num3"],                 "tags": ["rune"] }
+  ],
+
+  // Derived signals. Processors chain: each one's output is visible to everything else.
+  "processors": [
+    { "type": "axis2d", "to": "move", "tags": ["movement", "vector"],
+      "up": "action/move_up", "down": "action/move_down",
+      "left": "action/move_left", "right": "action/move_right" },
+
+    // Where the mouse is, relative to the player.
+    { "type": "relative", "to": "aim", "from": "mouse/position", "origin": "game/player_position",
+      "tags": ["aim", "mouse", "vector"] },
+
+    // Movement direction relative to where you aim.
+    { "type": "sectors", "to": "dir/move", "source": "move", "reference": "aim",
+      "names": ["toward", "right", "away", "left"], "deadzone": 0.1,
+      "tags": ["direction", "movement"] },
+
+    // Where the mouse is around the player (screen directions).
+    { "type": "sectors", "to": "dir/mouse", "source": "aim",
+      "names": ["e", "se", "s", "sw", "w", "nw", "n", "ne"], "deadzone": 24,
+      "tags": ["direction", "mouse"] },
+
+    // Where the mouse is relative to the way you're moving.
+    { "type": "sectors", "to": "dir/aim_vs_move", "source": "aim", "reference": "move",
+      "names": ["ahead", "right", "behind", "left"], "deadzone": 24,
+      "tags": ["direction", "mouse", "movement"] },
+
+    // Fast mouse motion, and its direction relative to aim.
+    { "type": "flick", "to": "flick", "source": "mouse/position",
+      "minSpeed": 2500, "window": 0.08, "cooldown": 0.15, "tags": ["mouse", "motion"] },
+    { "type": "sectors", "to": "dir/flick", "source": "flick", "reference": "aim",
+      "names": ["toward", "right", "away", "left"], "tags": ["direction", "mouse", "motion"] }
+  ],
+
+  // Channels watch for conditions. Condition forms:
+  //   "pattern"                                   press/pulse of a matching id
+  //   { "on": filter, "phase": ..., "tags": ... } any single-signal filter
+  //   { "hold": filter, "for": seconds }
+  //   { "seq": [conditions], "gap": seconds, "breakOn": filter }   (steps may set their own "gap")
+  //   { "together": [conditions], "window": seconds }
+  //   { "any": [conditions] }
+  //   ...plus "while": filter / "unless": filter on any condition.
+  "channels": [
+    { "name": "wolf_lunge", "tags": ["combat"],
+      "when": { "seq": ["action/dash", "action/attack"], "gap": 0.35 } },
+
+    // An extension of wolf_lunge: keep going and it continues.
+    { "name": "wolf_lunge_followup", "tags": ["combat"],
+      "when": { "seq": ["channel/wolf_lunge", "action/attack"], "gap": 0.4 } },
+
+    { "name": "charge", "tags": ["combat"],
+      "when": { "hold": "action/heavy", "for": 0.6 } },
+    { "name": "charge_release", "tags": ["combat"],
+      "when": { "seq": ["channel/charge", { "on": "action/heavy", "phase": "release" }], "gap": 3.0 } },
+
+    { "name": "venom_guard", "tags": ["combat", "rune"],
+      "when": { "together": ["action/guard", "rune/venom"], "window": 0.08 } },
+
+    // Motion input: step back, then in, then attack.
+    { "name": "step_in_strike", "tags": ["combat"],
+      "when": { "seq": ["dir/move/away", "dir/move/toward", "action/attack"], "gap": 0.25 } },
+
+    { "name": "flick_slash", "tags": ["combat", "mouse"],
+      "when": { "seq": ["dir/flick/*", "action/attack"], "gap": 0.2 } },
+
+    { "name": "guarded_dash", "tags": ["movement"],
+      "when": { "on": "action/dash", "while": "action/guard" } },
+
+    // Mixes a rune, where the mouse is, and a flick.
+    { "name": "fang_rake", "tags": ["combat", "rune"],
+      "when": { "seq": ["rune/fang", { "on": "dir/flick/toward" }], "gap": 0.3,
+                "while": "dir/aim_vs_move/ahead" } },
+
+    { "name": "flame_spin", "tags": ["combat", "rune"],
+      "when": { "seq": ["rune/flame", "dir/mouse/*", "dir/mouse/*", "dir/mouse/*", "dir/mouse/*"],
+                "gap": 0.25 } }
+  ],
+
+  // Mutes active from the start (none by default).
+  "mutes": [],
+
+  // Mute presets the app can toggle. "signals" drops matching signals from the pipeline;
+  // "channels" suspends matching channels; both together hides those signals from those channels.
+  "muteGroups": [
+    { "name": "keyboard",        "toggle": "key/F1", "signals": { "tags": ["keyboard"] } },
+    { "name": "mouse",           "toggle": "key/F2", "signals": { "tags": ["mouse"] } },
+    { "name": "movement",        "toggle": "key/F3", "signals": { "tags": ["movement"] } },
+    { "name": "combat channels", "toggle": "key/F4", "channels": { "tags": ["combat"] } },
+    { "name": "runes hidden from combat", "toggle": "key/F6",
+      "signals": { "tags": ["rune"] }, "channels": { "tags": ["combat"] } }
+  ]
+}
